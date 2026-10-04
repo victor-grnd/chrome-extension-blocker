@@ -92,3 +92,28 @@ test("overlayKey changes with the video or the verdict", () => {
   assert.notEqual(a, rules.overlayKey("blacklisted", "watch", BLACK, "https://www.youtube.com/watch?v=bbbbbbbbbbb"));
   assert.notEqual(a, rules.overlayKey("checking", "watch", null, "https://www.youtube.com/watch?v=aaaaaaaaaaa"));
 });
+
+test("pageKind: /clip/ is a watch page, /embed/ and /v/ are embedded players", () => {
+  assert.equal(rules.pageKind("/clip/UgkxAbc"), "watch");
+  assert.equal(rules.pageKind("/embed/abc123"), "embed");
+  assert.equal(rules.pageKind("/v/abc123"), "embed");
+});
+
+test("pageVerdict blocks a youtube.com embedded player opened as a page", () => {
+  assert.equal(rules.pageVerdict("embed", null, state), "block");
+  assert.equal(rules.pageVerdict("embed", null, off), "none");
+});
+
+test("watchChannelReady: only trust the owner block once it belongs to the URL's video", () => {
+  assert.equal(rules.watchChannelReady("https://www.youtube.com/watch?v=new", "new"), true);
+  assert.equal(rules.watchChannelReady("https://www.youtube.com/watch?v=new", "old"), false, "metadata of the previous video");
+  assert.equal(rules.watchChannelReady("https://www.youtube.com/watch?v=new", null), false);
+  assert.equal(rules.watchChannelReady("https://www.youtube.com/live/abc", "abc"), true);
+  assert.equal(rules.watchChannelReady("https://www.youtube.com/clip/Ugkx", "vid"), true, "clip URLs carry no video id");
+});
+
+test("hide.css hides every tile type listed in TILE_SELECTOR, and the miniplayer", () => {
+  const css = require("node:fs").readFileSync(require("node:path").join(__dirname, "../content/hide.css"), "utf8");
+  for (const sel of rules.TILE_SELECTOR.split(",")) assert.ok(css.includes(sel), `hide.css is missing ${sel}`);
+  assert.match(css, /ytd-miniplayer/);
+});

@@ -31,7 +31,9 @@
 
   function pageKind(pathname) {
     if (pathname === "/shorts" || pathname.startsWith("/shorts/")) return "shorts";
-    if (pathname === "/watch" || pathname.startsWith("/live/")) return "watch";
+    if (pathname === "/watch" || pathname.startsWith("/live/") || pathname.startsWith("/clip/")) return "watch";
+    // youtube.com's embedded player opened as a page: no owner block to read, so it is blocked (fail closed)
+    if (pathname.startsWith("/embed/") || pathname.startsWith("/v/")) return "embed";
     if (/^\/(@|channel\/|c\/|user\/)/.test(pathname)) return "channel";
     return "feed";
   }
@@ -63,6 +65,16 @@
     }
   }
 
+  // During SPA navigation the owner block still shows the previous video's channel.
+  // Trust it only once the watch page's video id (ytd-watch-flexy[video-id]) matches the URL.
+  function watchChannelReady(url, flexyVideoId) {
+    if (!flexyVideoId) return false;
+    const u = new URL(url);
+    const live = u.pathname.match(/^\/live\/([^/]+)/);
+    const expected = u.searchParams.get("v") || (live && live[1]);
+    return expected ? expected === flexyVideoId : true; // /clip/ URLs carry no video id
+  }
+
   // Identity of a blocked page. YouTube rewrites query params after load (pp=, cbrd=, t=):
   // the same video or channel must not count as a new cheating attempt.
   function overlayKey(verdict, kind, pageChannel, url) {
@@ -72,7 +84,7 @@
     return [verdict, kind, who, video].join("|");
   }
 
-  const api = { TILE_SELECTOR, CHANNEL_LINK, pageKind, pageVerdict, tileVisible, applyTiles, overlayKey };
+  const api = { TILE_SELECTOR, CHANNEL_LINK, pageKind, pageVerdict, tileVisible, applyTiles, watchChannelReady, overlayKey };
   root.BB = root.BB || {};
   root.BB.rules = api;
   if (isNode) module.exports = api;

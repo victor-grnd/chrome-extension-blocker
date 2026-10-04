@@ -13,7 +13,6 @@
   const OWNER_NAME = "ytd-watch-metadata #owner ytd-channel-name a, ytd-video-owner-renderer ytd-channel-name a";
 
   let state = null;
-  let navigating = false;
   let timer = null;
   let overlayKey = null;
   let overlayActive = false;
@@ -21,6 +20,8 @@
   function currentPageChannel(kind) {
     if (kind === "channel") return channel.parseChannelHref(location.pathname);
     if (kind !== "watch") return null;
+    const flexy = document.querySelector("ytd-watch-flexy");
+    if (!rules.watchChannelReady(location.href, flexy && flexy.getAttribute("video-id"))) return null;
     const link = document.querySelector(OWNER_LINK);
     const parsed = link ? channel.parseChannelHref(link.getAttribute("href")) : null;
     if (!parsed) return null;
@@ -28,9 +29,13 @@
     return { ...parsed, name: nameEl ? nameEl.textContent.trim() : null };
   }
 
+  // data-bb-paused marks videos *we* stopped, so they can resume if the verdict turns to "allow".
   function silenceVideos() {
     document.querySelectorAll("video").forEach((v) => {
-      if (!v.paused) v.pause();
+      if (!v.paused) {
+        v.pause();
+        v.dataset.bbPaused = "1";
+      }
       if (!v.muted) {
         v.muted = true;
         v.dataset.bbMuted = "1";
@@ -38,10 +43,14 @@
     });
   }
 
-  function restoreVideos() {
+  function restoreVideos(resume) {
     document.querySelectorAll('video[data-bb-muted="1"]').forEach((v) => {
       v.muted = false;
       delete v.dataset.bbMuted;
+    });
+    document.querySelectorAll('video[data-bb-paused="1"]').forEach((v) => {
+      delete v.dataset.bbPaused;
+      if (resume) v.play().catch(() => {});
     });
   }
 
@@ -67,7 +76,12 @@
     const label = (entry && entry.name) || (ch && (ch.name || ch.handle || ch.id)) || "";
     const texts = {
       checking: ["Vérification de la chaîne…", ""],
-      block: kind === "shorts" ? ["⛔ Shorts bloqués", "Pas de Shorts. Jamais."] : ["⛔ Chaîne non autorisée", label],
+      block:
+        kind === "shorts"
+          ? ["⛔ Shorts bloqués", "Pas de Shorts. Jamais."]
+          : kind === "embed"
+            ? ["⛔ Lecteur intégré bloqué", "Ouvre la vidéo sur YouTube : elle passera si sa chaîne est autorisée."]
+            : ["⛔ Chaîne non autorisée", label],
       blacklisted: ["🚫 Chaîne blacklistée", label],
     }[verdict];
     el.querySelector("h1").textContent = texts[0];
@@ -86,13 +100,14 @@
     el.querySelector(".bb-count").textContent = count;
   }
 
-  function hideOverlay() {
+  // resume: true only when the page itself became allowed (not when leaving it, e.g. Back to the feed).
+  function hideOverlay(resume) {
     if (!overlayActive) return;
     overlayActive = false;
     overlayKey = null;
     const el = document.getElementById("bb-overlay");
     if (el) el.remove();
-    restoreVideos();
+    restoreVideos(resume);
   }
 
   function scan() {
@@ -100,11 +115,10 @@
     if (!state) return;
     document.documentElement.classList.toggle("bb-off", !state.enabled);
     const kind = rules.pageKind(location.pathname);
-    // During SPA navigation the owner block still shows the previous video's channel: ignore it.
-    const ch = navigating && kind === "watch" ? null : currentPageChannel(kind);
+    const ch = currentPageChannel(kind);
     rules.applyTiles(document.querySelectorAll(rules.TILE_SELECTOR), { kind, channel: ch }, state);
     const verdict = rules.pageVerdict(kind, ch, state);
-    if (verdict === "allow" || verdict === "none") hideOverlay();
+    if (verdict === "allow" || verdict === "none") hideOverlay(verdict === "allow");
     else showOverlay(verdict, kind, ch);
   }
 
@@ -117,19 +131,16 @@
   document.addEventListener(
     "play",
     (event) => {
-      if (overlayActive && event.target instanceof HTMLVideoElement) event.target.pause();
+      if (overlayActive && event.target instanceof HTMLVideoElement) {
+        event.target.pause();
+        event.target.dataset.bbPaused = "1";
+      }
     },
     true
   );
 
-  document.addEventListener("yt-navigate-start", () => {
-    navigating = true;
-    schedule();
-  });
-  document.addEventListener("yt-navigate-finish", () => {
-    navigating = false;
-    schedule();
-  });
+  document.addEventListener("yt-navigate-start", schedule);
+  document.addEventListener("yt-navigate-finish", schedule);
 
   new MutationObserver(schedule).observe(document.documentElement, {
     childList: true,

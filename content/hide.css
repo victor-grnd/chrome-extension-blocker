@@ -33,6 +33,11 @@ yt-tab-shape[tab-title="Shorts"] {
   display: none !important;
 }
 
+/* 2b. Miniplayer: after leaving a blocked watch page with Back, it could keep the blocked video playable. */
+ytd-miniplayer {
+  display: none !important;
+}
+
 /* 3. Blocking overlay */
 #bb-overlay {
   position: fixed;
