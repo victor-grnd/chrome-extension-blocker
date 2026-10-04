@@ -92,3 +92,9 @@ test("attemptsToday resets at local midnight", () => {
   assert.equal(store.attemptsToday(s, NOW), 1);
   assert.equal(store.startOfDay(NOW), new Date(2026, 9, 4, 0, 0).getTime());
 });
+
+test("addChannel refuses a blacklisted channel known only by its handle (popup pre-check, no network)", () => {
+  const s = baseState();
+  assert.equal(store.addChannel(s, "allow", { id: null, handle: "@cyprien" }, NOW).result, "refused");
+  assert.equal(store.addChannel(s, "allow", { id: null, handle: "@apple" }, NOW).result, "duplicate");
+});

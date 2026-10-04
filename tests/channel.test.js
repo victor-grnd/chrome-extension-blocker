@@ -117,3 +117,13 @@ test("sameChannel compares ids first, then handles", () => {
   assert.equal(channel.sameChannel({ id: null, handle: null }, { id: null, handle: null }), false);
   assert.equal(channel.sameChannel(null, { id: ID_ASHTAX }), false);
 });
+
+test("resolveHandle sends the browser's YouTube cookies (avoids the EU consent redirect)", async () => {
+  let init;
+  const f = async (url, options) => {
+    init = options;
+    return { ok: true, status: 200, text: async () => PAGE };
+  };
+  await channel.resolveHandle("@ouahleouff", f);
+  assert.equal(init && init.credentials, "include");
+});

@@ -71,9 +71,10 @@
     const doFetch = fetchFn || root.fetch.bind(root);
     let res;
     try {
-      res = await doFetch("https://www.youtube.com" + path);
+      // Send the browser's YouTube cookies: without them, EU visitors get redirected to consent.youtube.com.
+      res = await doFetch("https://www.youtube.com" + path, { credentials: "include" });
     } catch (_) {
-      throw new Error("Impossible de joindre YouTube");
+      throw new Error("Impossible de joindre YouTube (ouvre youtube.com une fois dans ce navigateur, puis réessaie)");
     }
     if (!res.ok) throw new Error("Chaîne introuvable : " + label);
     const parsed = parseChannelPage(await res.text());

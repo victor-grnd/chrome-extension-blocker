@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Brainrot Blocker</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="top">
+      <h1>Brainrot Blocker</h1>
+      <button id="toggle" class="toggle" type="button" role="switch" aria-checked="true" aria-label="Activer / désactiver">
+        <span class="toggle-knob"></span>
+      </button>
+    </header>
+
+    <nav class="tabs">
+      <button type="button" data-tab="current" class="active">Actuel</button>
+      <button type="button" data-tab="lists">Listes</button>
+      <button type="button" data-tab="stats">Stats</button>
+    </nav>
+
+    <main>
+      <section id="tab-current" class="tab active">
+        <div id="current-box"><p class="muted">Chargement…</p></div>
+      </section>
+
+      <section id="tab-lists" class="tab">
+        <form id="add-form" class="add-form">
+          <input id="add-input" type="text" placeholder="@handle ou lien de la chaîne" autocomplete="off" required />
+          <div class="add-buttons">
+            <button type="submit" data-list="allow" class="btn allow">✅ Autoriser</button>
+            <button type="submit" data-list="block" class="btn block">🚫 Blacklister</button>
+          </div>
+        </form>
+        <h2>Allowlist <span id="allow-count"></span></h2>
+        <ul id="allow-list" class="chan-list"></ul>
+        <h2>Blacklist <span id="block-count"></span></h2>
+        <ul id="block-list" class="chan-list"></ul>
+      </section>
+
+      <section id="tab-stats" class="tab">
+        <div id="stats-box"></div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" hidden></div>
+    <div id="modal" class="modal" hidden></div>
+
+    <script src="../data/defaults.js"></script>
+    <script src="../shared/channel.js"></script>
+    <script src="../shared/storage.js"></script>
+    <script src="../shared/roasts.js"></script>
+    <script src="../shared/clicker.js"></script>
+    <script src="../shared/charts.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
