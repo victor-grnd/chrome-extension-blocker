@@ -1,0 +1,9 @@
+{
+  "name": "brainrot-blocker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "YouTube allow-only channel blocker (browser extension)",
+  "scripts": {
+    "test": "node --test"
+  }
+}
