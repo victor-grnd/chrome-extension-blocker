@@ -30,7 +30,8 @@ Extension Chrome (Manifest V3) qui fait tourner YouTube en mode **allow-only** :
 manifest.json
 content/
   hide.css        injecté à document_start : cache Shorts + toutes les vignettes par défaut
-  youtube.js      détection de chaîne, révélation des vignettes autorisées, écran de blocage
+  rules.js        règles pures (type de page, verdict page, visibilité vignette) — testables sous Node
+  youtube.js      branchement DOM : détection de chaîne, révélation des vignettes, écran de blocage
 popup/
   popup.html / popup.css / popup.js   3 onglets + interrupteur ON/OFF
 shared/
@@ -40,8 +41,10 @@ shared/
   roasts.js       messages par niveau + choix du niveau selon les tentatives du jour
   charts.js       courbe + barres en SVG fait main
 data/
-  defaults.json   listes de départ (allow + block) avec IDs UC… vérifiés
+  defaults.js     listes de départ (allow + block) avec IDs UC… vérifiés
 ```
+
+Sans bundler, un content script ne peut pas importer de JSON ni de module ES : chaque fichier partagé s'enregistre sur un namespace global `BB` (`globalThis.BB.channel`, `BB.store`…) et exporte aussi via `module.exports` pour les tests Node. C'est pour ça que les défauts sont en `.js` et non en `.json`.
 
 Pas de service worker en V1 (pas nécessaire : le popup et le content script lisent `chrome.storage` directement).
 
@@ -60,7 +63,7 @@ Pas de service worker en V1 (pas nécessaire : le popup et le content script lis
 - Handles stockés en minuscules (YouTube est insensible à la casse), avec le `@`.
 - Une chaîne est "reconnue" si son `id` **ou** son `handle` correspond (un handle peut avoir des alias, ex. `@OuahLeouff` / `@OuahMG` → même ID).
 - `history` : une entrée ajoutée à chaque modification d'une des deux listes.
-- Au premier lancement (`allow` absent), l'état est initialisé depuis `data/defaults.json` avec une première entrée `history`.
+- Au premier lancement (`allow` absent), l'état est initialisé depuis `data/defaults.js` (avec `addedAt: null`, pour ne pas compter les défauts dans « ajoutées cette semaine ») avec une première entrée `history`.
 - Invariant : une chaîne ne peut pas être dans les deux listes. Blacklister une chaîne autorisée la retire de l'allowlist.
 
 ## 5. Blocage sur YouTube (content script)
@@ -133,7 +136,7 @@ Niveau = nombre de tentatives (`attempts`) **du jour** (minuit local), tous type
 - Chaque roast affiche "Tentative n°X aujourd'hui".
 - Déclencheurs : ouverture du carré OFF, tentative d'autoriser une chaîne blacklistée, ouverture du carré de retrait de blacklist, visite d'une vidéo/chaîne blacklistée.
 
-## 9. Listes par défaut (`data/defaults.json`)
+## 9. Listes par défaut (`data/defaults.js`)
 
 Les IDs `UC…` sont résolus et vérifiés à l'implémentation.
 
