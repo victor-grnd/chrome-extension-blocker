@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Brainrot Blocker",
+  "version": "0.1.0",
+  "description": "YouTube en mode allow-only : seules les chaînes autorisées passent.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.youtube.com/*"],
+  "action": {
+    "default_title": "Brainrot Blocker",
+    "default_popup": "popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "css": ["content/hide.css"],
+      "js": [
+        "data/defaults.js",
+        "shared/channel.js",
+        "shared/storage.js",
+        "shared/roasts.js",
+        "content/rules.js",
+        "content/youtube.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

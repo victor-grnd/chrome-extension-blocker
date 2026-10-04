@@ -1,0 +1,64 @@
+/* 1. Allow-only: every video tile is hidden until youtube.js marks it .bb-ok.
+      Keep this list in sync with TILE_SELECTOR in content/rules.js. */
+html:not(.bb-off) :is(
+  ytd-rich-item-renderer,
+  ytd-video-renderer,
+  ytd-compact-video-renderer,
+  ytd-grid-video-renderer,
+  ytd-playlist-video-renderer,
+  ytd-playlist-panel-video-renderer,
+  ytd-playlist-renderer,
+  ytd-compact-playlist-renderer,
+  ytd-radio-renderer,
+  ytd-compact-radio-renderer,
+  ytd-channel-renderer,
+  yt-lockup-view-model
+):not(.bb-ok) {
+  display: none !important;
+}
+
+/* 2. Shorts: always hidden, even when the extension is OFF. */
+ytd-reel-shelf-renderer,
+ytd-rich-shelf-renderer[is-shorts],
+ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+grid-shelf-view-model:has(ytm-shorts-lockup-view-model),
+ytm-shorts-lockup-view-model,
+ytm-shorts-lockup-view-model-v2,
+ytd-reel-item-renderer,
+:is(ytd-rich-item-renderer, ytd-video-renderer, ytd-compact-video-renderer, ytd-grid-video-renderer, yt-lockup-view-model):has(a[href^="/shorts/"]),
+ytd-guide-entry-renderer:has(a[title="Shorts"]),
+ytd-mini-guide-entry-renderer:has(a[title="Shorts"]),
+ytd-mini-guide-entry-renderer[aria-label="Shorts"],
+yt-tab-shape[tab-title="Shorts"] {
+  display: none !important;
+}
+
+/* 3. Blocking overlay */
+#bb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #0b0b0f;
+  color: #f5f5f5;
+  font-family: system-ui, -apple-system, sans-serif;
+  text-align: center;
+}
+#bb-overlay .bb-box { max-width: 560px; }
+#bb-overlay h1 { font-size: 32px; margin: 0 0 12px; }
+#bb-overlay .bb-sub { font-size: 18px; opacity: 0.7; margin: 0 0 24px; }
+#bb-overlay .bb-roast { font-size: 22px; font-weight: 700; color: #ff4d4f; margin: 0 0 8px; }
+#bb-overlay .bb-count { font-size: 14px; opacity: 0.6; margin: 0 0 24px; }
+#bb-overlay button {
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid #444;
+  background: #1c1c22;
+  color: inherit;
+  cursor: pointer;
+}
