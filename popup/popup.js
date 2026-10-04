@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const { channel, store, roasts, clicker } = globalThis.BB;
+  const { channel, store, roasts, clicker, charts } = globalThis.BB;
   const $ = (sel) => document.querySelector(sel);
   const STATUS_LABELS = { allowed: "✅ Autorisée", blocked: "⛔ Bloquée", blacklisted: "🚫 Blacklistée" };
 
@@ -203,8 +203,23 @@
     }
   }
 
-  // Replaced in Task 8.
-  function renderStats() {}
+  function renderStats() {
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const addedThisWeek = (list) => list.filter((e) => e.addedAt && e.addedAt >= weekAgo).length;
+    // Only numbers and SVG built from numbers go into innerHTML: no user text here.
+    $("#stats-box").innerHTML = `
+      <div class="kpis">
+        <div class="kpi"><span class="kpi-value">${state.allow.length}</span><span class="kpi-label">Allowlist (+${addedThisWeek(state.allow)} cette semaine)</span></div>
+        <div class="kpi"><span class="kpi-value">${state.block.length}</span><span class="kpi-label">Blacklist (+${addedThisWeek(state.block)} cette semaine)</span></div>
+        <div class="kpi"><span class="kpi-value">${store.attemptsToday(state, now)}</span><span class="kpi-label">Tentatives aujourd'hui</span></div>
+        <div class="kpi"><span class="kpi-value">${state.attempts.length}</span><span class="kpi-label">Tentatives au total</span></div>
+      </div>
+      <h2>Évolution des listes</h2>
+      ${charts.lineChart(charts.historyToSeries(state.history, now))}
+      <h2>Tentatives de triche (14 jours)</h2>
+      ${charts.barChart(charts.dailyCounts(state.attempts, now, 14))}`;
+  }
 
   function render() {
     $("#toggle").setAttribute("aria-checked", String(state.enabled));
