@@ -67,3 +67,33 @@ ytd-miniplayer {
   color: inherit;
   cursor: pointer;
 }
+#bb-overlay .bb-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 0 0 12px; }
+#bb-overlay .bb-actions:empty { display: none; }
+#bb-overlay .bb-msg { font-size: 14px; color: #ff4d4f; margin: 0 0 16px; min-height: 1em; }
+#bb-overlay .bb-add-allow { border-color: #2e7d32; }
+#bb-overlay .bb-add-block, #bb-fab .bb-add-block { border-color: #b3261e; }
+#bb-overlay button:disabled, #bb-fab button:disabled { opacity: 0.5; cursor: default; }
+
+/* 4. Floating "blacklist" button on an allowed channel page */
+#bb-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: #ff4d4f;
+}
+#bb-fab button {
+  font: inherit;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid #444;
+  background: #1c1c22;
+  color: #f5f5f5;
+  cursor: pointer;
+}
+html.bb-off #bb-fab { display: none; }

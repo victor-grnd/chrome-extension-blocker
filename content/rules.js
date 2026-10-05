@@ -35,12 +35,13 @@
     // youtube.com's embedded player opened as a page: no owner block to read, so it is blocked (fail closed)
     if (pathname.startsWith("/embed/") || pathname.startsWith("/v/")) return "embed";
     if (/^\/(@|channel\/|c\/|user\/)/.test(pathname)) return "channel";
+    if (pathname === "/results") return "search";
     return "feed";
   }
 
   function pageVerdict(kind, pageChannel, state) {
     if (kind === "shorts") return "block";
-    if (!state.enabled || kind === "feed") return "none";
+    if (!state.enabled || kind === "feed" || kind === "search") return "none";
     // fail closed: unidentified watch page = still checking, unidentified channel page = blocked
     if (!pageChannel) return kind === "watch" ? "checking" : "block";
     const status = store.statusOf(state, pageChannel);
@@ -53,7 +54,15 @@
     // Tiles on a channel page (its Videos tab) have no channel link: they belong to the page's channel.
     const ch = tileChannel || (pageCtx.kind === "channel" ? pageCtx.channel : null);
     if (!ch) return false;
-    return store.statusOf(state, ch) === "allowed";
+    const status = store.statusOf(state, ch);
+    // Search is for discovering channels: everything shows except the blacklist.
+    if (pageCtx.kind === "search") return status !== "blacklisted";
+    return status === "allowed";
+  }
+
+  // The overlay offers "add to allowlist / blacklist" only for an identified channel that is in neither list.
+  function canAddFromOverlay(verdict, kind, pageChannel) {
+    return verdict === "block" && (kind === "watch" || kind === "channel") && Boolean(pageChannel);
   }
 
   // Recomputed from the current link on every call: YouTube recycles tile elements.
@@ -84,7 +93,7 @@
     return [verdict, kind, who, video].join("|");
   }
 
-  const api = { TILE_SELECTOR, CHANNEL_LINK, pageKind, pageVerdict, tileVisible, applyTiles, watchChannelReady, overlayKey };
+  const api = { TILE_SELECTOR, CHANNEL_LINK, pageKind, pageVerdict, tileVisible, canAddFromOverlay, applyTiles, watchChannelReady, overlayKey };
   root.BB = root.BB || {};
   root.BB.rules = api;
   if (isNode) module.exports = api;

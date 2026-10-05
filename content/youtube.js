@@ -16,6 +16,8 @@
   let timer = null;
   let overlayKey = null;
   let overlayActive = false;
+  let quietKey = null; // overlay key of a channel just blacklisted from the page: not a cheating attempt
+  let adding = false;
 
   function currentPageChannel(kind) {
     if (kind === "channel") return channel.parseChannelHref(location.pathname);
@@ -54,6 +56,63 @@
     });
   }
 
+  // Same path as the popup: resolve the full channel (id + name) from YouTube, then add it to the list.
+  async function addFromPage(listName, ch) {
+    const full = ch.handle ? await channel.resolveHandle(ch.handle) : await channel.resolveId(ch.id);
+    const { state: next, result } = store.addChannel(state, listName, full, Date.now());
+    if (result === "refused") throw new Error("Cette chaîne est blacklistée.");
+    if (result !== "added") return;
+    if (listName === "block") quietKey = rules.overlayKey("blacklisted", rules.pageKind(location.pathname), ch, location.href);
+    state = next;
+    await store.save(state, ["allow", "block", "history"]);
+  }
+
+  // Blacklisting is almost irreversible (100k clicks to undo), so that button needs a second click.
+  function makeAddButton(listName, ch, label, onError) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "bb-add bb-add-" + listName;
+    btn.textContent = label;
+    let armed = listName === "allow";
+    btn.addEventListener("click", async () => {
+      if (adding) return;
+      if (!armed) {
+        armed = true;
+        btn.textContent = "Sûr ? Reclique pour blacklister";
+        return;
+      }
+      adding = true;
+      btn.disabled = true;
+      try {
+        await addFromPage(listName, ch);
+      } catch (err) {
+        btn.disabled = false;
+        onError(err.message);
+      } finally {
+        adding = false;
+      }
+      schedule();
+    });
+    return btn;
+  }
+
+  // Floating "blacklist" button on the page of an allowed channel.
+  function updateFab(show, ch) {
+    let fab = document.getElementById("bb-fab");
+    const key = show ? ch.id || ch.handle : null;
+    if (fab && fab.dataset.key !== key) {
+      fab.remove();
+      fab = null;
+    }
+    if (!show || fab || !document.body) return;
+    fab = document.createElement("div");
+    fab.id = "bb-fab";
+    fab.dataset.key = key;
+    const msg = document.createElement("span");
+    fab.append(msg, makeAddButton("block", ch, "🚫 Blacklister cette chaîne", (text) => (msg.textContent = text)));
+    document.body.appendChild(fab);
+  }
+
   function showOverlay(verdict, kind, ch) {
     overlayActive = true;
     silenceVideos();
@@ -67,8 +126,9 @@
       el.id = "bb-overlay";
       el.innerHTML =
         '<div class="bb-box"><h1></h1><p class="bb-sub"></p><p class="bb-roast"></p><p class="bb-count"></p>' +
-        "<button type=\"button\">← Retour à l'accueil</button></div>";
-      el.querySelector("button").addEventListener("click", () => location.assign("/"));
+        '<div class="bb-actions"></div><p class="bb-msg"></p>' +
+        "<button type=\"button\" class=\"bb-home\">← Retour à l'accueil</button></div>";
+      el.querySelector(".bb-home").addEventListener("click", () => location.assign("/"));
       (document.body || document.documentElement).appendChild(el);
     }
 
@@ -87,9 +147,21 @@
     el.querySelector("h1").textContent = texts[0];
     el.querySelector(".bb-sub").textContent = texts[1];
 
+    const actions = el.querySelector(".bb-actions");
+    const msg = el.querySelector(".bb-msg");
+    actions.textContent = "";
+    msg.textContent = "";
+    if (rules.canAddFromOverlay(verdict, kind, ch)) {
+      const onError = (text) => (msg.textContent = text);
+      actions.append(
+        makeAddButton("allow", ch, "✅ Ajouter à l'allowlist", onError),
+        makeAddButton("block", ch, "🚫 Ajouter à la blacklist", onError)
+      );
+    }
+
     let roast = "";
     let count = "";
-    if (verdict === "blacklisted") {
+    if (verdict === "blacklisted" && key !== quietKey) {
       state = store.logAttempt(state, "visitBlocked", Date.now());
       store.save(state, ["attempts"]).catch(() => {});
       const n = store.attemptsToday(state, Date.now());
@@ -105,6 +177,7 @@
     if (!overlayActive) return;
     overlayActive = false;
     overlayKey = null;
+    quietKey = null;
     const el = document.getElementById("bb-overlay");
     if (el) el.remove();
     restoreVideos(resume);
@@ -118,6 +191,7 @@
     const ch = currentPageChannel(kind);
     rules.applyTiles(document.querySelectorAll(rules.TILE_SELECTOR), { kind, channel: ch }, state);
     const verdict = rules.pageVerdict(kind, ch, state);
+    updateFab(kind === "channel" && verdict === "allow", ch);
     if (verdict === "allow" || verdict === "none") hideOverlay(verdict === "allow");
     else showOverlay(verdict, kind, ch);
   }

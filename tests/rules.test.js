@@ -19,7 +19,7 @@ test("pageKind", () => {
   assert.equal(rules.pageKind("/c/legacy"), "channel");
   assert.equal(rules.pageKind("/shorts/xyz"), "shorts");
   assert.equal(rules.pageKind("/"), "feed");
-  assert.equal(rules.pageKind("/results"), "feed");
+  assert.equal(rules.pageKind("/results"), "search");
   assert.equal(rules.pageKind("/feed/subscriptions"), "feed");
 });
 
@@ -49,6 +49,25 @@ test("tileVisible", () => {
   assert.equal(rules.tileVisible(null, { kind: "feed", channel: null }, state), false, "unknown channel stays hidden");
   assert.equal(rules.tileVisible(null, { kind: "channel", channel: ALLOWED }, state), true, "tiles on an allowed channel page inherit it");
   assert.equal(rules.tileVisible(OTHER, { kind: "feed", channel: null }, off), true);
+});
+
+test("search results show every channel except blacklisted ones", () => {
+  const ctx = { kind: "search", channel: null };
+  assert.equal(rules.tileVisible(ALLOWED, ctx, state), true);
+  assert.equal(rules.tileVisible(OTHER, ctx, state), true, "neutral channels are visible in search");
+  assert.equal(rules.tileVisible(BLACK, ctx, state), false);
+  assert.equal(rules.tileVisible(null, ctx, state), false, "unknown channel stays hidden");
+  assert.equal(rules.pageVerdict("search", null, state), "none", "the search page itself is never blocked");
+});
+
+test("canAddFromOverlay: only a not-yet-listed channel on a watch or channel page", () => {
+  assert.equal(rules.canAddFromOverlay("block", "watch", OTHER), true);
+  assert.equal(rules.canAddFromOverlay("block", "channel", OTHER), true);
+  assert.equal(rules.canAddFromOverlay("block", "channel", null), false, "unidentified channel");
+  assert.equal(rules.canAddFromOverlay("block", "shorts", null), false);
+  assert.equal(rules.canAddFromOverlay("block", "embed", null), false);
+  assert.equal(rules.canAddFromOverlay("blacklisted", "watch", BLACK), false, "leaving the blacklist costs 100k clicks");
+  assert.equal(rules.canAddFromOverlay("checking", "watch", null), false);
 });
 
 function fakeTile(href) {

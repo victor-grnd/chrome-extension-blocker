@@ -2,7 +2,9 @@
 
 Extension navigateur (Brave / Chrome) qui fait tourner YouTube en mode **allow-only** : toutes les chaînes sont bloquées sauf celles de ton allowlist.
 
-- Les vignettes des chaînes non autorisées sont cachées partout (accueil, recherche, suggestions, abonnements).
+- Les vignettes des chaînes non autorisées sont cachées (accueil, suggestions, abonnements).
+- La recherche affiche tous les résultats sauf ceux des chaînes blacklistées (pour découvrir des chaînes).
+- L'écran de blocage d'une chaîne non listée propose deux boutons : ajouter à l'allowlist ou à la blacklist. Une chaîne autorisée a un bouton « Blacklister » sur sa page.
 - Une vidéo ou une page de chaîne non autorisée est recouverte d'un écran de blocage.
 - Les Shorts sont toujours bloqués.
 - Une **blacklist** empêche d'autoriser certaines chaînes et déclenche des roasts de plus en plus violents.
